@@ -104,7 +104,9 @@ def _post_one(client: httpx.Client, url: str, line: str) -> int:
 
 def load(target: str, input_path: Path, concurrency: int = 32) -> None:
     url = target.rstrip("/") + "/api/v1/lineage"
-    print(f"Loading {input_path} → {url} (concurrency={concurrency})", file=sys.stderr)
+    print(
+        f"Loading {input_path} -> {url} (concurrency={concurrency}, single-event)", file=sys.stderr
+    )
     sent, errors = 0, 0
     t0 = time.time()
     with (
@@ -136,6 +138,61 @@ def load(target: str, input_path: Path, concurrency: int = 32) -> None:
     print(f"Loaded {sent:,} events in {time.time() - t0:.1f}s (errors={errors})", file=sys.stderr)
 
 
+def _post_batch(client: httpx.Client, url: str, events: list[dict]) -> tuple[int, int]:
+    """Returns (status_code, events_in_batch)."""
+    r = client.post(url, json={"events": events})
+    return r.status_code, len(events)
+
+
+def load_batch(target: str, input_path: Path, batch_size: int = 100, concurrency: int = 8) -> None:
+    """Load via POST /api/v1/lineage:batch — N events per HTTP call."""
+    url = target.rstrip("/") + "/api/v1/lineage:batch"
+    print(
+        f"Loading {input_path} -> {url} (batch_size={batch_size}, concurrency={concurrency})",
+        file=sys.stderr,
+    )
+    sent, errors = 0, 0
+    t0 = time.time()
+
+    def _iter_batches():
+        buf: list[dict] = []
+        with input_path.open("r", encoding="utf-8") as f:
+            for line in f:
+                buf.append(json.loads(line))
+                if len(buf) >= batch_size:
+                    yield buf
+                    buf = []
+        if buf:
+            yield buf
+
+    with (
+        httpx.Client(timeout=60.0, limits=httpx.Limits(max_connections=concurrency)) as client,
+        ThreadPoolExecutor(max_workers=concurrency) as pool,
+    ):
+        inflight: list = []
+        for batch in _iter_batches():
+            inflight.append(pool.submit(_post_batch, client, url, batch))
+            if len(inflight) >= concurrency * 4:
+                for fut in as_completed(inflight):
+                    code, n = fut.result()
+                    sent += n
+                    if code >= 400:
+                        errors += 1
+                    if sent and sent // 10_000 != (sent - n) // 10_000:
+                        rate = sent / (time.time() - t0)
+                        print(
+                            f"  sent {sent:,} ({rate:,.0f}/s, errors={errors})",
+                            file=sys.stderr,
+                        )
+                inflight = []
+        for fut in as_completed(inflight):
+            code, n = fut.result()
+            sent += n
+            if code >= 400:
+                errors += 1
+    print(f"Loaded {sent:,} events in {time.time() - t0:.1f}s (errors={errors})", file=sys.stderr)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--edges", type=int, default=5_000_000, help="approx edge count (default 5M)")
@@ -144,12 +201,21 @@ def main() -> None:
     ap.add_argument("--input", type=Path, help="NDJSON file to load (used with --load)")
     ap.add_argument("--target", type=str, default="http://localhost:8000")
     ap.add_argument("--concurrency", type=int, default=32)
+    ap.add_argument(
+        "--batch-size",
+        type=int,
+        default=0,
+        help="If > 0, use POST /api/v1/lineage:batch with this many events per request",
+    )
     args = ap.parse_args()
 
     if args.load:
         if not args.input:
             ap.error("--load requires --input")
-        load(args.target, args.input, args.concurrency)
+        if args.batch_size > 0:
+            load_batch(args.target, args.input, args.batch_size, args.concurrency)
+        else:
+            load(args.target, args.input, args.concurrency)
     else:
         generate(args.edges, args.out)
 

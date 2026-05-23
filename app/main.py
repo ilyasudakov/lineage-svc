@@ -12,7 +12,7 @@ from app.config import settings
 from app.db import engine, get_session
 from app.repository import direct_neighbors, traverse, upsert_edges
 from app.routes_ui import router as ui_router
-from app.schemas import Direction, OpenLineageEvent
+from app.schemas import BatchIngestRequest, BatchIngestResponse, Direction, OpenLineageEvent
 from app.translator import translate
 
 logging.basicConfig(level=settings.log_level)
@@ -55,6 +55,34 @@ async def ingest(
     edges = translate(event)
     written = await upsert_edges(session, edges)
     return {"edges_written": written}
+
+
+@app.post("/api/v1/lineage:batch", status_code=201, response_model=BatchIngestResponse)
+async def ingest_batch(
+    payload: BatchIngestRequest, session: AsyncSession = Depends(get_session)
+) -> BatchIngestResponse:
+    """Bulk ingest — translates every event, dedupes, upserts once per request.
+
+    Designed for producer-side batching (DTS workers, fixture loaders) that
+    would otherwise pay an HTTP round trip + transaction cost per event.
+    See docs/benchmark/batch-ingest.md for measured numbers.
+    """
+    all_edges = []
+    for event in payload.events:
+        all_edges.extend(translate(event))
+
+    # Cross-event dedup — same edge can appear via different events in one batch.
+    seen: set[tuple[str, str, str]] = set()
+    deduped = []
+    for e in all_edges:
+        key = (e.src_urn, e.dst_urn, e.edge_type)
+        if key in seen:
+            continue
+        seen.add(key)
+        deduped.append(e)
+
+    written = await upsert_edges(session, deduped)
+    return BatchIngestResponse(events_received=len(payload.events), edges_written=written)
 
 
 @app.get("/api/v1/lineage/direct")
