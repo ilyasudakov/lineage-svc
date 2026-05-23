@@ -1,0 +1,5 @@
+   relname    | seq_scan | seq_tup_read | idx_scan | idx_tup_fetch | n_live_tup 
+--------------+----------+--------------+----------+---------------+------------
+ lineage_edge |        0 |            0 |  3092242 |         72079 |    2900756
+(1 row)
+
