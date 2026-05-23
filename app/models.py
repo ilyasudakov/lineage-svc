@@ -18,7 +18,9 @@ class LineageEdge(Base):
     job_urn: Mapped[str | None] = mapped_column(String, nullable=True)
     run_id: Mapped[str | None] = mapped_column(String, nullable=True)
     namespace: Mapped[str] = mapped_column(String, nullable=False)
-    edge_metadata: Mapped[dict | None] = mapped_column("metadata", JSONB().with_variant(JSON, "sqlite"), nullable=True)
+    edge_metadata: Mapped[dict | None] = mapped_column(
+        "metadata", JSONB().with_variant(JSON, "sqlite"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now()

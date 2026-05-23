@@ -8,7 +8,6 @@ from starlette.responses import Response
 
 from app.config import settings
 from app.db import engine, get_session
-from app.models import Base
 from app.repository import direct_neighbors, traverse, upsert_edges
 from app.schemas import Direction, OpenLineageEvent
 from app.translator import translate
@@ -19,9 +18,6 @@ log = logging.getLogger("lineage-svc")
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    # PoC convenience: create tables on startup. Replace with Alembic for prod.
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
     yield
     await engine.dispose()
 
@@ -40,7 +36,9 @@ async def metrics() -> Response:
 
 
 @app.post("/api/v1/lineage", status_code=201)
-async def ingest(event: OpenLineageEvent, session: AsyncSession = Depends(get_session)) -> dict[str, int]:
+async def ingest(
+    event: OpenLineageEvent, session: AsyncSession = Depends(get_session)
+) -> dict[str, int]:
     edges = translate(event)
     written = await upsert_edges(session, edges)
     return {"edges_written": written}
