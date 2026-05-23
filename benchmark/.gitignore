@@ -1,3 +1,5 @@
 fixture.ndjson
 *.ndjson
-results/
+# Keep committed reports in results/, but ignore future ad-hoc dumps
+# by naming them with a leading underscore (e.g. _scratch_*.json).
+results/_*
