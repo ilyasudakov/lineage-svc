@@ -1,14 +1,17 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import Depends, FastAPI, Query
+from fastapi.staticfiles import StaticFiles
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from sqlalchemy.ext.asyncio import AsyncSession
-from starlette.responses import Response
+from starlette.responses import FileResponse, Response
 
 from app.config import settings
 from app.db import engine, get_session
 from app.repository import direct_neighbors, traverse, upsert_edges
+from app.routes_ui import router as ui_router
 from app.schemas import Direction, OpenLineageEvent
 from app.translator import translate
 
@@ -23,6 +26,16 @@ async def lifespan(_: FastAPI):
 
 
 app = FastAPI(title="lineage-svc", version="0.1.0", lifespan=lifespan)
+app.include_router(ui_router)
+
+_STATIC_DIR = Path(__file__).parent / "static"
+if _STATIC_DIR.exists():
+    app.mount("/ui/static", StaticFiles(directory=_STATIC_DIR), name="static")
+
+
+@app.get("/ui", include_in_schema=False)
+async def ui_index() -> FileResponse:
+    return FileResponse(_STATIC_DIR / "index.html")
 
 
 @app.get("/health")

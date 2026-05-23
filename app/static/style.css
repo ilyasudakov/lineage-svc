@@ -1,0 +1,190 @@
+:root {
+  --bg: #0f1115;
+  --panel: #161a22;
+  --panel-2: #1d222d;
+  --text: #e6e8ef;
+  --muted: #8a93a6;
+  --accent: #4f8cff;
+  --dataset: #4f8cff;
+  --job: #ff9f43;
+  --produces: #2ecc71;
+  --consumes: #ff7675;
+  --derives: #b39ddb;
+  --border: #262c38;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: 14px/1.4 -apple-system, "Segoe UI", system-ui, sans-serif;
+}
+
+body {
+  display: grid;
+  grid-template-columns: 340px 1fr;
+  grid-template-rows: 48px 1fr;
+  grid-template-areas: "header header" "sidebar main";
+}
+
+header {
+  grid-area: header;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+}
+header h1 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+#status {
+  font-size: 12px;
+  color: var(--muted);
+}
+#status.busy { color: var(--accent); }
+#status.error { color: var(--consumes); }
+
+aside#sidebar {
+  grid-area: sidebar;
+  overflow-y: auto;
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+aside section h2 {
+  margin: 0 0 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  font-weight: 600;
+}
+
+label {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+input, select, button {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 6px 8px;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--text);
+  font: inherit;
+}
+input:focus, select:focus { outline: 1px solid var(--accent); }
+button {
+  cursor: pointer;
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+  font-weight: 500;
+}
+button:hover { filter: brightness(1.1); }
+button:disabled { opacity: 0.5; cursor: default; }
+
+.results {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--panel-2);
+}
+.results li {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  font-size: 12px;
+  word-break: break-all;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.results li:last-child { border-bottom: none; }
+.results li:hover { background: rgba(79, 140, 255, 0.12); }
+.results li.dataset::before { content: "▦ "; color: var(--dataset); }
+.results li.job::before     { content: "▶ "; color: var(--job); }
+
+.selected code {
+  display: block;
+  background: var(--panel-2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 6px 8px;
+  font-size: 12px;
+  word-break: break-all;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+.stats {
+  margin-top: 8px;
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.legend ul { list-style: none; margin: 0; padding: 0; }
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.swatch.dataset { background: var(--dataset); }
+.swatch.job     { background: var(--job); }
+.line {
+  display: inline-block;
+  width: 24px;
+  height: 2px;
+}
+.line.produces { background: var(--produces); }
+.line.consumes { background: var(--consumes); }
+.line.derives  { background: var(--derives); }
+
+main {
+  grid-area: main;
+  position: relative;
+  background: var(--bg);
+}
+#cy {
+  position: absolute;
+  inset: 0;
+}
+#empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  text-align: center;
+  padding: 24px;
+  font-size: 13px;
+  pointer-events: none;
+}
+body.has-graph #empty { display: none; }
