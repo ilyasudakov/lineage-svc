@@ -13,6 +13,7 @@ benchmark. This index links to the full breakdown.
 | --- | --- |
 | [methodology.md](methodology.md) | What was tested, how, on what hardware, with what fixture |
 | [results.md](results.md) | All measured numbers per scenario, side-by-side |
+| [hard-tests.md](hard-tests.md) | Concurrency, adversarial graphs, growing-graph, chaos |
 | [issues-and-fixes.md](issues-and-fixes.md) | Bugs found while testing + how they were fixed |
 | [reproduction.md](reproduction.md) | Step-by-step rerun guide |
 | [../decision.md](../decision.md) | Final ship/iterate/abort recommendation (in progress) |
