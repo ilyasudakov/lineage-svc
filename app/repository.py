@@ -7,37 +7,48 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models import LineageEdge
 from app.schemas import Direction, Edge
 
+# Chunk size for INSERT...VALUES — keeps individual statements under
+# Postgres' protocol limits (parameters ≤ 65535) and avoids unbounded memory
+# while still amortising the round trip. With 7 columns per row, 5_000 rows
+# = 35_000 parameters — comfortably below the cap.
+_UPSERT_CHUNK = 5_000
+
+
+def _row(e: Edge) -> dict:
+    return {
+        "src_urn": e.src_urn,
+        "dst_urn": e.dst_urn,
+        "edge_type": e.edge_type,
+        "job_urn": e.job_urn,
+        "run_id": e.run_id,
+        "namespace": e.namespace,
+        "metadata": e.metadata,
+    }
+
 
 async def upsert_edges(session: AsyncSession, edges: list[Edge]) -> int:
     if not edges:
         return 0
-    rows = [
-        {
-            "src_urn": e.src_urn,
-            "dst_urn": e.dst_urn,
-            "edge_type": e.edge_type,
-            "job_urn": e.job_urn,
-            "run_id": e.run_id,
-            "namespace": e.namespace,
-            "metadata": e.metadata,
-        }
-        for e in edges
-    ]
     # Use Core table (not the ORM-mapped class): SQLAlchemy's ORM bulk path
     # mistakes our `metadata` DB column for the Table's `metadata` attribute.
-    stmt = insert(LineageEdge.__table__).values(rows)
-    stmt = stmt.on_conflict_do_update(
-        index_elements=["src_urn", "dst_urn", "edge_type"],
-        set_={
-            "job_urn": stmt.excluded.job_urn,
-            "run_id": stmt.excluded.run_id,
-            "namespace": stmt.excluded.namespace,
-            "metadata": stmt.excluded.metadata,
-        },
-    )
-    await session.execute(stmt)
+    written = 0
+    for start in range(0, len(edges), _UPSERT_CHUNK):
+        chunk = edges[start : start + _UPSERT_CHUNK]
+        rows = [_row(e) for e in chunk]
+        stmt = insert(LineageEdge.__table__).values(rows)
+        stmt = stmt.on_conflict_do_update(
+            index_elements=["src_urn", "dst_urn", "edge_type"],
+            set_={
+                "job_urn": stmt.excluded.job_urn,
+                "run_id": stmt.excluded.run_id,
+                "namespace": stmt.excluded.namespace,
+                "metadata": stmt.excluded.metadata,
+            },
+        )
+        await session.execute(stmt)
+        written += len(rows)
     await session.commit()
-    return len(rows)
+    return written
 
 
 async def direct_neighbors(session: AsyncSession, node: str) -> dict[str, list[dict[str, Any]]]:

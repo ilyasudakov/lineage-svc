@@ -34,3 +34,19 @@ class OpenLineageEvent(BaseModel):
     producer: str | None = None
 
     model_config = {"extra": "allow"}
+
+
+class BatchIngestRequest(BaseModel):
+    """Multiple OL events in a single HTTP call.
+
+    Caps batch size at 1000 to keep per-request transaction time bounded and
+    to prevent a single client from monopolising the upsert path. Producers
+    that need higher throughput should pipeline batches concurrently.
+    """
+
+    events: list[OpenLineageEvent] = Field(..., min_length=1, max_length=1000)
+
+
+class BatchIngestResponse(BaseModel):
+    events_received: int
+    edges_written: int
