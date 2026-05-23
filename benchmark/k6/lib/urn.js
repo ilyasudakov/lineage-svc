@@ -7,6 +7,11 @@ const SOURCES = [
 ];
 const REPORTS = ["campaigns", "adsets", "ads", "creatives", "insights"];
 
+const BACKEND = __ENV.BACKEND || "lineage";
+// Match the fixture's dataset pool size: generator uses max(100, edges // 10).
+// For 100k edges → 10k datasets. Override via URN_POOL.
+const URN_POOL = __ENV.URN_POOL ? parseInt(__ENV.URN_POOL, 10) : 10_000;
+
 function powerLaw(n, alpha = 1.5) {
   return Math.min(n - 1, Math.floor(n * Math.pow(Math.random(), alpha)));
 }
@@ -15,12 +20,16 @@ export function pickNamespace() {
   return NAMESPACES[powerLaw(NAMESPACES.length)];
 }
 
+// Both backends store the same dataset names (loaded from one fixture);
+// only the URN separator differs: lineage-svc uses '/', Marquez uses ':'.
 export function randomDatasetUrn() {
   const ns = pickNamespace();
   const src = SOURCES[powerLaw(SOURCES.length)];
   const rpt = REPORTS[powerLaw(REPORTS.length)];
-  const id = powerLaw(500_000);
-  return `dataset:${ns}/data_table__${src}__${rpt}__sql_${id}__${id}`;
+  const id = powerLaw(URN_POOL);
+  const name = `${src}.api.${rpt}.${id}`; // matches fixture inputs[].name
+  const sep = BACKEND === "marquez" ? ":" : "/";
+  return `dataset:${ns}${sep}${name}`;
 }
 
 export function buildEvent() {

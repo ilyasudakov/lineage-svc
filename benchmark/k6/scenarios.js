@@ -15,6 +15,13 @@ import { buildEvent, randomDatasetUrn } from "./lib/urn.js";
 
 const TARGET = __ENV.TARGET || "http://localhost:8000";
 const SCENARIO = __ENV.SCENARIO || "steady_write";
+const BACKEND = __ENV.BACKEND || "lineage"; // "lineage" | "marquez"
+
+// Allow shorter smoke runs without editing the file. Set OVERRIDE_DURATION
+// (e.g. "1m") and OVERRIDE_RATE (e.g. "50") to override the steady scenarios'
+// duration/rate. Avoid the K6_* prefix — k6 reserves those for its own flags.
+const DUR_OVERRIDE = __ENV.OVERRIDE_DURATION;
+const RATE_OVERRIDE = __ENV.OVERRIDE_RATE ? parseInt(__ENV.OVERRIDE_RATE, 10) : null;
 
 const writeLatency = new Trend("write_latency_ms", true);
 const readDirectLatency = new Trend("read_direct_latency_ms", true);
@@ -89,6 +96,10 @@ if (!SCENARIOS[SCENARIO]) {
   throw new Error(`unknown SCENARIO=${SCENARIO}; choose one of ${Object.keys(SCENARIOS).join(", ")}`);
 }
 
+const _picked = SCENARIOS[SCENARIO];
+if (DUR_OVERRIDE && "duration" in _picked) _picked.duration = DUR_OVERRIDE;
+if (RATE_OVERRIDE !== null && "rate" in _picked) _picked.rate = RATE_OVERRIDE;
+
 export const options = {
   scenarios: { [SCENARIO]: SCENARIOS[SCENARIO] },
   thresholds: {
@@ -121,10 +132,20 @@ export function readMixed() {
   else readDepth(10);
 }
 
+function readUrl(node, depth) {
+  if (BACKEND === "marquez") {
+    return `${TARGET}/api/v1/lineage?nodeId=${encodeURIComponent(node)}&depth=${depth}`;
+  }
+  if (depth === 1) {
+    return `${TARGET}/api/v1/lineage/direct?node=${encodeURIComponent(node)}`;
+  }
+  return `${TARGET}/api/v1/lineage?node=${encodeURIComponent(node)}&depth=${depth}&direction=downstream`;
+}
+
 function readDirect() {
   const node = randomDatasetUrn();
   const t0 = Date.now();
-  const r = http.get(`${TARGET}/api/v1/lineage/direct?node=${encodeURIComponent(node)}`);
+  const r = http.get(readUrl(node, 1));
   readDirectLatency.add(Date.now() - t0);
   if (!check(r, { "direct 2xx": (resp) => resp.status >= 200 && resp.status < 300 })) {
     errors.add(1);
@@ -134,9 +155,7 @@ function readDirect() {
 function readDepth(depth) {
   const node = randomDatasetUrn();
   const t0 = Date.now();
-  const r = http.get(
-    `${TARGET}/api/v1/lineage?node=${encodeURIComponent(node)}&depth=${depth}&direction=downstream`,
-  );
+  const r = http.get(readUrl(node, depth));
   const latency = Date.now() - t0;
   if (depth === 3) readDepth3Latency.add(latency);
   else readDepth10Latency.add(latency);
@@ -149,9 +168,7 @@ export function readDeep() {
   const depth = 10 + Math.floor(Math.random() * 41); // 10–50
   const node = randomDatasetUrn();
   const t0 = Date.now();
-  const r = http.get(
-    `${TARGET}/api/v1/lineage?node=${encodeURIComponent(node)}&depth=${depth}&direction=both`,
-  );
+  const r = http.get(readUrl(node, depth));
   readDepth10Latency.add(Date.now() - t0);
   if (!check(r, { "deep 2xx": (resp) => resp.status >= 200 && resp.status < 300 })) {
     errors.add(1);
