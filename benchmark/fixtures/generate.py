@@ -20,7 +20,7 @@ import random
 import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -41,7 +41,7 @@ def _power_law_pick(n: int, alpha: float = 1.5) -> int:
 
 
 def _now_iso() -> str:
-    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    return datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
 
 def _make_event(ns: str, job_idx: int, in_dataset_idx: int, out_dataset_idx: int) -> dict:
@@ -68,7 +68,10 @@ def generate(edges: int, out_path: Path) -> None:
     emit `edges // 3` events to hit the target edge count."""
     events_to_emit = max(1, edges // 3)
     n_datasets = max(100, edges // 10)  # ensure reuse → power-law hubs
-    print(f"Generating {events_to_emit:,} events → ~{edges:,} edges into {out_path}", file=sys.stderr)
+    print(
+        f"Generating {events_to_emit:,} events → ~{edges:,} edges into {out_path}",
+        file=sys.stderr,
+    )
     t0 = time.time()
     with out_path.open("w", encoding="utf-8") as f:
         for job_idx in range(events_to_emit):
@@ -92,30 +95,32 @@ def load(target: str, input_path: Path, concurrency: int = 32) -> None:
     print(f"Loading {input_path} → {url} (concurrency={concurrency})", file=sys.stderr)
     sent, errors = 0, 0
     t0 = time.time()
-    with httpx.Client(timeout=30.0, limits=httpx.Limits(max_connections=concurrency)) as client:
-        with ThreadPoolExecutor(max_workers=concurrency) as pool:
-            with input_path.open("r", encoding="utf-8") as f:
-                inflight: list = []
-                for line in f:
-                    inflight.append(pool.submit(_post_one, client, url, line))
-                    if len(inflight) >= concurrency * 4:
-                        for fut in as_completed(inflight):
-                            code = fut.result()
-                            sent += 1
-                            if code >= 400:
-                                errors += 1
-                            if sent % 10_000 == 0:
-                                rate = sent / (time.time() - t0)
-                                print(
-                                    f"  sent {sent:,} ({rate:,.0f}/s, errors={errors})",
-                                    file=sys.stderr,
-                                )
-                        inflight = []
+    with (
+        httpx.Client(timeout=30.0, limits=httpx.Limits(max_connections=concurrency)) as client,
+        ThreadPoolExecutor(max_workers=concurrency) as pool,
+        input_path.open("r", encoding="utf-8") as f,
+    ):
+        inflight: list = []
+        for line in f:
+            inflight.append(pool.submit(_post_one, client, url, line))
+            if len(inflight) >= concurrency * 4:
                 for fut in as_completed(inflight):
                     code = fut.result()
                     sent += 1
                     if code >= 400:
                         errors += 1
+                    if sent % 10_000 == 0:
+                        rate = sent / (time.time() - t0)
+                        print(
+                            f"  sent {sent:,} ({rate:,.0f}/s, errors={errors})",
+                            file=sys.stderr,
+                        )
+                inflight = []
+        for fut in as_completed(inflight):
+            code = fut.result()
+            sent += 1
+            if code >= 400:
+                errors += 1
     print(f"Loaded {sent:,} events in {time.time() - t0:.1f}s (errors={errors})", file=sys.stderr)
 
 
