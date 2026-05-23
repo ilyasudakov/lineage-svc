@@ -1,0 +1,79 @@
+{
+  "title": "lineage-svc vs Marquez",
+  "uid": "lineage-vs-marquez",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "5s",
+  "time": { "from": "now-30m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Write p95 (k6)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(k6_write_latency_ms_bucket[1m])) by (le, service))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Read direct p95 (k6)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 0, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(k6_read_direct_latency_ms_bucket[1m])) by (le, service))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Read depth=10 p99 (k6)",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.99, sum(rate(k6_read_depth10_latency_ms_bucket[1m])) by (le, service))",
+          "legendFormat": "{{service}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Postgres CPU (pg_stat_activity)",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "rate(pg_stat_database_xact_commit{datname=~\"lineage|marquez\"}[1m])",
+          "legendFormat": "{{datname}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Sequential scans on lineage_edge",
+      "type": "timeseries",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        {
+          "expr": "pg_stat_user_tables_seq_scan{relname=\"lineage_edge\"}",
+          "legendFormat": "seq_scan"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "k6 errors",
+      "type": "timeseries",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "targets": [
+        { "expr": "rate(k6_errors[1m])", "legendFormat": "errors/s" }
+      ]
+    }
+  ]
+}
