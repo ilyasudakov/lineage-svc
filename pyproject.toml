@@ -1,5 +1,5 @@
 [project]
-name = "lineage-svc"
+name = "data-lineage"
 version = "0.1.0"
 description = "Lightweight lineage service with edges-only schema (PoC replacement for Marquez)"
 readme = "README.md"

@@ -2,11 +2,11 @@
 
 ## Goal
 
-Demonstrate that `lineage-svc`'s edges-only schema is strictly faster than
+Demonstrate that `data-lineage`'s edges-only schema is strictly faster than
 Marquez's events/versions/runs schema under identical load, on identical
 hardware, against identical data — per IMD-60352 Definition of Done:
 
-> Outcome must show lineage-svc strictly better on all 9 perf metrics —
+> Outcome must show data-lineage strictly better on all 9 perf metrics —
 > otherwise PoC fails and we revisit approach.
 
 ## Environment
@@ -15,7 +15,7 @@ hardware, against identical data — per IMD-60352 Definition of Done:
 - **Network:** docker-compose bridge `benchmark_default`, all containers
   on the same L2 segment, no external network calls during measurement
 - **Stack:** [`benchmark/docker-compose.yml`](../../benchmark/docker-compose.yml)
-  - `lineage-svc` — FastAPI + uvicorn (2 workers), 2 CPU / 2 GB cap
+  - `data-lineage` — FastAPI + uvicorn (2 workers), 2 CPU / 2 GB cap
   - `lineage-pg` — Postgres 16, 4 CPU / 4 GB cap
   - `marquez` — `marquezproject/marquez:0.50.0`, 2 CPU / 2 GB cap
   - `marquez-pg` — Postgres 14, 4 CPU / 4 GB cap (matches what Marquez
@@ -59,7 +59,7 @@ becomes a first comparative data point (see [results.md](results.md#loader)).
 ## Scenarios
 
 All defined in [`benchmark/k6/scenarios.js`](../../benchmark/k6/scenarios.js).
-The smoke run executed two of the six; the full Week 3 plan runs all six.
+The smoke run executed two of the six; the full benchmark plan runs all six.
 
 | Scenario | Profile | Purpose |
 | --- | --- | --- |
@@ -79,7 +79,7 @@ network as the services — no port-forwarding latency:
 docker run --rm -i --network benchmark_default \
   -v "$(pwd)/benchmark:/bench" \
   -e SCENARIO=steady_write -e BACKEND=lineage \
-  -e TARGET=http://lineage-svc:8000 \
+  -e TARGET=http://data-lineage:8000 \
   -e OVERRIDE_DURATION=60s -e OVERRIDE_RATE=100 \
   grafana/k6 run --summary-export=/bench/results/steady_write_lineage.json \
   /bench/k6/scenarios.js
@@ -93,7 +93,7 @@ file drives both backends correctly.
 ## What we measure
 
 Custom k6 trends report latency per request type — independent of
-HTTP-level metrics, so we see lineage-svc's `/direct` latency separately
+HTTP-level metrics, so we see data-lineage's `/direct` latency separately
 from a depth-10 traversal latency:
 
 - `write_latency_ms`
@@ -140,4 +140,4 @@ of existing nodes, not the full graph.
 - Recovery after Postgres restart
 - Correctness equality vs Marquez at scale
 
-All of the above are scoped to the full Week 3 run.
+All of the above are scoped to the full benchmark run.

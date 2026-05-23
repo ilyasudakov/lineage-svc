@@ -3,15 +3,15 @@ global:
   evaluation_interval: 5s
 
 scrape_configs:
-  - job_name: lineage-svc
+  - job_name: data-lineage
     static_configs:
-      - targets: ["lineage-svc:8000"]
-        labels: { service: lineage-svc }
+      - targets: ["data-lineage:8000"]
+        labels: { service: data-lineage }
 
   - job_name: lineage-pg
     static_configs:
       - targets: ["postgres-exporter-lineage:9187"]
-        labels: { service: lineage-svc, db: lineage-pg }
+        labels: { service: data-lineage, db: lineage-pg }
 
   - job_name: marquez
     static_configs:

@@ -95,4 +95,4 @@ async def test_search_rejects_empty_query(client: AsyncClient):
 async def test_ui_index_serves_html(client: AsyncClient):
     r = await client.get("/ui")
     assert r.status_code == 200
-    assert b"<title>lineage-svc" in r.content
+    assert b"<title>data-lineage" in r.content

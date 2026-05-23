@@ -6,9 +6,9 @@ errors) at the moment the run finished.
 
 | File | Scenario | Backend | Duration | Rate |
 | --- | --- | --- | --- | --- |
-| `steady_write_lineage.json` | `steady_write` | lineage-svc | 60 s | 100 rps |
+| `steady_write_lineage.json` | `steady_write` | data-lineage | 60 s | 100 rps |
 | `steady_write_marquez.json` | `steady_write` | Marquez 0.50.0 | 60 s | 100 rps |
-| `read_lineage.json` | `read_only_baseline` | lineage-svc | 60 s | 100 rps |
+| `read_lineage.json` | `read_only_baseline` | data-lineage | 60 s | 100 rps |
 | `read_marquez.json` | `read_only_baseline` | Marquez 0.50.0 | 60 s | 100 rps |
 
 See [`docs/benchmark/results.md`](../../docs/benchmark/results.md) for

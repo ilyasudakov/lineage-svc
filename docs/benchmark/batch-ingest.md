@@ -94,7 +94,7 @@ endpoint for backward compat. Recommend `N=500` for all future loads.
 
 ## What this unlocks
 
-Closes the open DoD gap from the Week 3 run: **sustained 300 ev/s with
+Closes the open DoD gap from the full benchmark run: **sustained 300 ev/s with
 zero backlog**. The single-event ceiling was around 300 ev/s with p95
 hovering at the 50 ms target boundary. With batches of 500, we measured
 3,092 ev/s on the **same** hardware — **10× headroom over the 300 ev/s

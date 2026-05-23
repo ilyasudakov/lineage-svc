@@ -1,4 +1,4 @@
-# lineage-svc
+# data-lineage
 
 Lightweight lineage service with an **edges-only schema** — Marquez replacement
 candidate for the Improvado data platform.
@@ -10,7 +10,7 @@ candidate for the Improvado data platform.
 
 Measured side-by-side against Marquez 0.50.0 under identical hardware and load.
 
-| | lineage-svc | Marquez | Δ |
+| | data-lineage | Marquez | Δ |
 | --- | --- | --- | --- |
 | Write throughput (batch endpoint) | **3,092 ev/s** | 41.6 ev/s | **74×** |
 | Write p95 @ 300 rps | 6 ms median | 19,529 ms | 90× |
@@ -90,7 +90,7 @@ open  http://localhost:3000                 # Grafana side-by-side dashboard
 | Test | Command | Notes |
 | --- | --- | --- |
 | Smoke (60 s × 100 rps) | see [docs/benchmark/reproduction.md](docs/benchmark/reproduction.md) | ~30 min wall time |
-| Full Week 3 (6 scenarios) | `bash benchmark/run_week3.sh` | ~2 h |
+| Full benchmark (6 scenarios) | `bash benchmark/run_full.sh` | ~2 h |
 | Hard tests (concurrent, adversarial, growing, chaos) | see [docs/benchmark/hard-tests.md](docs/benchmark/hard-tests.md) | ~15 min |
 | Batch ingest comparison | see [docs/benchmark/batch-ingest.md](docs/benchmark/batch-ingest.md) | ~10 min |
 
@@ -99,7 +99,7 @@ open  http://localhost:3000                 # Grafana side-by-side dashboard
 ```bash
 python -m venv .venv && . .venv/Scripts/activate   # Windows PS: .\.venv\Scripts\Activate.ps1
 pip install -e ".[dev]"
-pytest -q          # 31 tests, in-memory sqlite, no docker needed
+pytest -q          # 24 tests, in-memory sqlite, no docker needed
 ruff check .
 ruff format .
 ```
@@ -110,7 +110,7 @@ ruff format .
 - [`docs/benchmark/`](docs/benchmark/) — full benchmark report set
   - [`README.md`](docs/benchmark/README.md) — index + executive summary
   - [`methodology.md`](docs/benchmark/methodology.md) — environment, fixture, scenarios
-  - [`results.md`](docs/benchmark/results.md) — Phase 1 smoke numbers
+  - [`results.md`](docs/benchmark/results.md) — smoke numbers
   - [`hard-tests.md`](docs/benchmark/hard-tests.md) — concurrency, adversarial, growing, chaos
   - [`batch-ingest.md`](docs/benchmark/batch-ingest.md) — batch endpoint measurements
   - [`issues-and-fixes.md`](docs/benchmark/issues-and-fixes.md) — bugs found during the run

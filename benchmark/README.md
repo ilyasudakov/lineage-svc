@@ -1,12 +1,12 @@
 # Benchmark Harness
 
-Side-by-side load tests for `lineage-svc` and Marquez under identical 10x prod load (IMD-60352).
+Side-by-side load tests for `data-lineage` and Marquez under identical 10x prod load (IMD-60352).
 
 ## Layout
 
 ```
 benchmark/
-├── docker-compose.yml      # lineage-svc + Marquez + Postgres x2 + Prometheus + Grafana
+├── docker-compose.yml      # data-lineage + Marquez + Postgres x2 + Prometheus + Grafana
 ├── fixtures/
 │   └── generate.py         # synthetic power-law graph generator (default 5M edges)
 ├── k6/
@@ -32,7 +32,7 @@ python benchmark/fixtures/generate.py --edges 5_000_000 --out /tmp/fixture.ndjso
 python benchmark/fixtures/generate.py --load --target http://localhost:8000 --input /tmp/fixture.ndjson
 python benchmark/fixtures/generate.py --load --target http://localhost:5000 --input /tmp/fixture.ndjson
 
-# 4. Run a scenario against lineage-svc, then against Marquez
+# 4. Run a scenario against data-lineage, then against Marquez
 SCENARIO=steady_write TARGET=http://localhost:8000 k6 run benchmark/k6/scenarios.js
 SCENARIO=steady_write TARGET=http://localhost:5000 k6 run benchmark/k6/scenarios.js
 
@@ -52,7 +52,7 @@ SCENARIO=steady_write TARGET=http://localhost:5000 k6 run benchmark/k6/scenarios
 
 ## Pass/fail targets (must beat Marquez on ALL 9)
 
-| Metric | lineage-svc target |
+| Metric | data-lineage target |
 | --- | --- |
 | Write throughput sustained | ≥ 300 events/s, zero backlog |
 | Write p95 | < 50 ms |

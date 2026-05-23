@@ -29,7 +29,7 @@ Hard tests run — 2026-05-23
     Result: PASS (no degradation, indexes healthy)
 
 [4] chaos
-    kill_app (kill lineage-svc container, restart):
+    kill_app (kill data-lineage container, restart):
         rows before: 224,997, rows after: 226,485, added: 1,488
         recovery:    6s     — PASS (target < 30s)
     kill_pg  (kill lineage-pg container, restart):

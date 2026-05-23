@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Hard test: chaos / fault injection.
 #
-# Scenario 1: kill lineage-svc app mid-write, restart, verify recovery
+# Scenario 1: kill data-lineage app mid-write, restart, verify recovery
 # Scenario 2: kill lineage-pg mid-write, wait for healthcheck, verify recovery
 #             and no data loss (sample count before and after)
 #
@@ -18,7 +18,7 @@ FIXTURE="$(dirname "$0")/_chaos_fixture.ndjson"
 RESULTS="$(dirname "$0")/../results"
 mkdir -p "$RESULTS"
 
-PYTHON="${PYTHON:-E:/projects/lineage-svc/.venv/Scripts/python.exe}"
+PYTHON="${PYTHON:-E:/projects/data-lineage/.venv/Scripts/python.exe}"
 
 count_rows() {
   "$PYTHON" -c "
@@ -95,7 +95,7 @@ run_scenario() {
 }
 
 set +e
-run_scenario "kill_app" lineage-svc
+run_scenario "kill_app" data-lineage
 APP_RC=$?
 run_scenario "kill_pg" lineage-pg
 PG_RC=$?

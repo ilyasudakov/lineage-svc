@@ -1,7 +1,7 @@
 # How to Reproduce the Smoke Benchmark
 
 End-to-end runbook. ~30 minutes wall time on a workstation with Docker
-Desktop. Replace `E:/projects/lineage-svc` with your checkout path
+Desktop. Replace `E:/projects/data-lineage` with your checkout path
 throughout.
 
 ## Prerequisites
@@ -14,7 +14,7 @@ throughout.
 ## Step 1 — Bring up the side-by-side stack
 
 ```bash
-cd E:/projects/lineage-svc
+cd E:/projects/data-lineage
 docker compose -f benchmark/docker-compose.yml up -d --build
 ```
 
@@ -22,7 +22,7 @@ Wait ~30 s for both Postgreses to report healthy:
 
 ```bash
 docker compose -f benchmark/docker-compose.yml ps
-# expect both *-pg containers (healthy), lineage-svc healthy, marquez running
+# expect both *-pg containers (healthy), data-lineage healthy, marquez running
 ```
 
 Sanity-check each backend responds:
@@ -32,7 +32,7 @@ curl -s http://localhost:8000/health        # {"status":"ok"}
 curl -s http://localhost:5000/api/v1/namespaces | head -c 200
 ```
 
-## Step 2 — Create the lineage-svc schema
+## Step 2 — Create the data-lineage schema
 
 The Docker image does not bundle Alembic migrations. Run them from the
 host against the exposed port 5433:
@@ -40,7 +40,7 @@ host against the exposed port 5433:
 ```bash
 python -m venv .venv
 .venv/Scripts/python.exe -m pip install -e ".[dev]" alembic
-LINEAGE_DATABASE_URL="postgresql+asyncpg://lineage:lineage@localhost:5433/lineage" \
+DATA_LINEAGE_DATABASE_URL="postgresql+asyncpg://lineage:lineage@localhost:5433/lineage" \
   .venv/Scripts/python.exe -m alembic upgrade head
 # expect: "Running upgrade  -> 0001_initial, initial lineage_edge"
 ```
@@ -56,7 +56,7 @@ LINEAGE_DATABASE_URL="postgresql+asyncpg://lineage:lineage@localhost:5433/lineag
 
 ## Step 4 — Load fixture into both backends
 
-⚠️ Concurrency=8 is intentional — concurrency=32 trips lineage-svc's
+⚠️ Concurrency=8 is intentional — concurrency=32 trips data-lineage's
 HTTP connection ceiling. Keep them equal for a fair comparison.
 
 ```bash
@@ -72,7 +72,7 @@ HTTP connection ceiling. Keep them equal for a fair comparison.
 ```
 
 The throughput each loader reports is the **first comparative data point**:
-~110 ev/s for lineage-svc vs ~33 ev/s for Marquez.
+~110 ev/s for data-lineage vs ~33 ev/s for Marquez.
 
 ## Step 5 — Run k6 scenarios
 
@@ -85,16 +85,16 @@ MSYS from rewriting `/bench/` to `C:/Program Files/Git/bench/`).
 mkdir -p benchmark/results
 
 MSYS_NO_PATHCONV=1 docker run --rm -i --network benchmark_default \
-  -v "E:/projects/lineage-svc/benchmark:/bench" \
+  -v "E:/projects/data-lineage/benchmark:/bench" \
   -e SCENARIO=steady_write -e BACKEND=lineage \
-  -e TARGET=http://lineage-svc:8000 \
+  -e TARGET=http://data-lineage:8000 \
   -e OVERRIDE_DURATION=60s -e OVERRIDE_RATE=100 \
   grafana/k6 run --quiet \
   --summary-export=/bench/results/steady_write_lineage.json \
   /bench/k6/scenarios.js
 
 MSYS_NO_PATHCONV=1 docker run --rm -i --network benchmark_default \
-  -v "E:/projects/lineage-svc/benchmark:/bench" \
+  -v "E:/projects/data-lineage/benchmark:/bench" \
   -e SCENARIO=steady_write -e BACKEND=marquez \
   -e TARGET=http://marquez:5000 \
   -e OVERRIDE_DURATION=60s -e OVERRIDE_RATE=100 \
@@ -107,16 +107,16 @@ MSYS_NO_PATHCONV=1 docker run --rm -i --network benchmark_default \
 
 ```bash
 MSYS_NO_PATHCONV=1 docker run --rm -i --network benchmark_default \
-  -v "E:/projects/lineage-svc/benchmark:/bench" \
+  -v "E:/projects/data-lineage/benchmark:/bench" \
   -e SCENARIO=read_only_baseline -e BACKEND=lineage \
-  -e TARGET=http://lineage-svc:8000 \
+  -e TARGET=http://data-lineage:8000 \
   -e OVERRIDE_DURATION=60s -e OVERRIDE_RATE=100 \
   grafana/k6 run --quiet \
   --summary-export=/bench/results/read_lineage.json \
   /bench/k6/scenarios.js
 
 MSYS_NO_PATHCONV=1 docker run --rm -i --network benchmark_default \
-  -v "E:/projects/lineage-svc/benchmark:/bench" \
+  -v "E:/projects/data-lineage/benchmark:/bench" \
   -e SCENARIO=read_only_baseline -e BACKEND=marquez \
   -e TARGET=http://marquez:5000 \
   -e OVERRIDE_DURATION=60s -e OVERRIDE_RATE=100 \
@@ -160,7 +160,7 @@ docker compose -f benchmark/docker-compose.yml down -v
 `-v` removes the Postgres volumes — important when retrying with a
 different fixture, otherwise stale data poisons the comparison.
 
-## Stepping up to the full Week 3 run
+## Stepping up to the full benchmark run
 
 The smoke run uses `OVERRIDE_DURATION=60s OVERRIDE_RATE=100`. Drop those
 env vars to run each scenario at its full duration and rate from the

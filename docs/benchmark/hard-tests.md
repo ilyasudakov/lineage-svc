@@ -1,6 +1,6 @@
 # Hard Tests — Beyond Latency
 
-The Phase 1 smoke benchmark showed `lineage-svc` is fast. These hard tests
+The smoke benchmark showed `data-lineage` is fast. These hard tests
 answer the questions latency numbers don't: does it stay *correct* and
 *recoverable* under stress?
 
@@ -11,7 +11,7 @@ answer the questions latency numbers don't: does it stay *correct* and
 
 ## Why these tests
 
-The smoke benchmark proved lineage-svc beats Marquez on **latency / throughput**.
+The smoke benchmark proved data-lineage beats Marquez on **latency / throughput**.
 It did not prove the service is **correct** under contention, **robust** to
 weird graph shapes, **scalable** as the graph grows, or **recoverable** after
 process / DB failures. Each test below targets one of those.
@@ -114,7 +114,7 @@ to let some rows in, `docker compose kill <service>`, restart, poll
 
 | Scenario | Recovery time | Rows before | Rows after | Added | DoD target |
 | --- | --- | --- | --- | --- | --- |
-| `kill_app` (kill `lineage-svc`) | **6 s** | 224,997 | 226,485 | 1,488 | < 30 s |
+| `kill_app` (kill `data-lineage`) | **6 s** | 224,997 | 226,485 | 1,488 | < 30 s |
 | `kill_pg` (kill `lineage-pg`) | **3 s** | 226,485 | 404,904 | 178,419 | < 30 s |
 
 **Both PASS.**
