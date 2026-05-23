@@ -59,9 +59,7 @@ def marquez_direct(client: httpx.Client, base: str, node: str) -> set[EdgeKey]:
     return edges
 
 
-def diff_one(
-    client: httpx.Client, lineage_base: str, marquez_base: str, node: str
-) -> dict | None:
+def diff_one(client: httpx.Client, lineage_base: str, marquez_base: str, node: str) -> dict | None:
     """Return mismatch detail, or None if edge sets are equal."""
     try:
         a = lineage_direct(client, lineage_base, node)

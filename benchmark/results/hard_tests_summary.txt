@@ -1,0 +1,43 @@
+Hard tests run — 2026-05-23
+
+[1] concurrent_writes  (64 threads × 200 reps = 12,800 POSTs of the SAME edge)
+    POSTs sent:        12,800
+    Wall time:         70.06s
+    Throughput:        183 POSTs/sec
+    Client errors:     0
+    Latency p50/p95/p99: 171.0 / 1093.9 / 1760.3 ms
+    Rows in DB:        3 (expected: 3)
+    Result:            PASS (idempotent, no PK leaks, no client errors)
+
+[2] adversarial_graphs
+    cycle (A->B->C->A, depth=10 from A):
+        status=200, edges=9, latency=13ms  — PASS (cycle terminated)
+    deep (linear chain length=100):
+        depth=50: status=200, edges=149, latency=33ms  — PASS
+        depth=51: status=422 (above API cap, guardrail held)  — PASS
+    wide (fanout=1000):
+        depth=1: status=200, edges=1001 (1 consumes + 1000 derives_from), latency=18ms  — PASS
+
+[3] growing_graph (5 batches × 15k events, 500 random reads sampled per step)
+    edges    p50_ms  p95_ms  p99_ms
+    45,000   10.03   11.77   13.09
+    90,000    9.75   10.37   10.96
+    135,000   9.89   10.86   12.05
+    179,999   9.92   10.89   11.93
+    224,997   9.80   10.51   12.39
+    p95 growth ratio first→last: 0.89x (read latency FLAT as graph grew 5x)
+    Result: PASS (no degradation, indexes healthy)
+
+[4] chaos
+    kill_app (kill lineage-svc container, restart):
+        rows before: 224,997, rows after: 226,485, added: 1,488
+        recovery:    6s     — PASS (target < 30s)
+    kill_pg  (kill lineage-pg container, restart):
+        rows before: 226,485, rows after: 404,904, added: 178,419
+        recovery:    3s     — PASS (target < 30s, writer survived outage)
+
+Summary:
+    concurrent_writes   PASS
+    adversarial (3/3)   PASS
+    growing_graph       PASS
+    chaos (2/2)         PASS

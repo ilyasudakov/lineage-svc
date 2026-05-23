@@ -25,11 +25,23 @@ from pathlib import Path
 
 import httpx
 
-NAMESPACES = [f"{i}_ws_{i*7}" for i in range(1, 21)]  # 20 tenants
+NAMESPACES = [f"{i}_ws_{i * 7}" for i in range(1, 21)]  # 20 tenants
 SOURCES = [
-    "facebook_ads", "google_ads", "tiktok_ads", "linkedin_ads", "snapchat_ads",
-    "twitter_ads", "pinterest_ads", "amazon_ads", "criteo", "adroll",
-    "hubspot", "salesforce", "marketo", "pardot", "intercom",
+    "facebook_ads",
+    "google_ads",
+    "tiktok_ads",
+    "linkedin_ads",
+    "snapchat_ads",
+    "twitter_ads",
+    "pinterest_ads",
+    "amazon_ads",
+    "criteo",
+    "adroll",
+    "hubspot",
+    "salesforce",
+    "marketo",
+    "pardot",
+    "intercom",
 ]
 REPORT_TYPES = ["campaigns", "adsets", "ads", "creatives", "insights", "audiences"]
 
@@ -37,7 +49,7 @@ REPORT_TYPES = ["campaigns", "adsets", "ads", "creatives", "insights", "audience
 def _power_law_pick(n: int, alpha: float = 1.5) -> int:
     """Zipf-like: small indices much more likely → hub nodes."""
     u = random.random()
-    return min(n - 1, int(n * (u ** alpha)))
+    return min(n - 1, int(n * (u**alpha)))
 
 
 def _now_iso() -> str:
