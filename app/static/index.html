@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>lineage-svc — graph explorer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="/ui/static/style.css" />
+  <script src="https://unpkg.com/cytoscape@3.30.2/dist/cytoscape.min.js"></script>
+</head>
+<body>
+  <header>
+    <h1>lineage-svc</h1>
+    <span id="status">ready</span>
+  </header>
+
+  <aside id="sidebar">
+    <section class="search">
+      <label>Namespace
+        <select id="namespace">
+          <option value="">(all)</option>
+        </select>
+      </label>
+
+      <label>Search URN
+        <input id="query" type="search" placeholder="e.g. facebook_ads" autocomplete="off" />
+      </label>
+
+      <ul id="results" class="results"></ul>
+    </section>
+
+    <section class="controls">
+      <label>Depth
+        <input id="depth" type="number" min="1" max="50" value="2" />
+      </label>
+      <label>Direction
+        <select id="direction">
+          <option value="both" selected>both</option>
+          <option value="upstream">upstream</option>
+          <option value="downstream">downstream</option>
+        </select>
+      </label>
+      <button id="reload" type="button">Reload</button>
+    </section>
+
+    <section class="selected" id="selected-box" hidden>
+      <h2>Selected</h2>
+      <code id="selected-urn"></code>
+      <div class="stats"><span id="stat-in">↑ 0</span> <span id="stat-out">↓ 0</span></div>
+    </section>
+
+    <section class="legend">
+      <h2>Legend</h2>
+      <ul>
+        <li><span class="swatch dataset"></span> dataset</li>
+        <li><span class="swatch job"></span> job</li>
+        <li><span class="line produces"></span> produces</li>
+        <li><span class="line consumes"></span> consumes</li>
+        <li><span class="line derives"></span> derives_from</li>
+      </ul>
+    </section>
+  </aside>
+
+  <main>
+    <div id="cy"></div>
+    <div id="empty">
+      <p>Pick a namespace and search for a URN, or paste one directly.</p>
+    </div>
+  </main>
+
+  <script src="/ui/static/app.js"></script>
+</body>
+</html>
