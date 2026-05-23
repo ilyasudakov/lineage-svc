@@ -23,7 +23,9 @@ async def upsert_edges(session: AsyncSession, edges: list[Edge]) -> int:
         }
         for e in edges
     ]
-    stmt = insert(LineageEdge).values(rows)
+    # Use Core table (not the ORM-mapped class): SQLAlchemy's ORM bulk path
+    # mistakes our `metadata` DB column for the Table's `metadata` attribute.
+    stmt = insert(LineageEdge.__table__).values(rows)
     stmt = stmt.on_conflict_do_update(
         index_elements=["src_urn", "dst_urn", "edge_type"],
         set_={
