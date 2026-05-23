@@ -1,9 +1,9 @@
-# Benchmark Report — IMD-60352 (lineage-svc vs Marquez)
+# Benchmark Report — IMD-60352 (data-lineage vs Marquez)
 
 Comparative performance report from the local docker-compose side-by-side
 benchmark. This index links to the full breakdown.
 
-**Status:** Phase 1 smoke run complete. Full Week 3 (5M edges, 300 rps × 30 min × 6 scenarios) pending.
+**Status:** smoke + hard tests + full benchmark complete. See [../decision.md](../decision.md) for the final SHIP recommendation.
 **Date:** 2026-05-23
 **Jira:** [IMD-60352](https://improvado.atlassian.net/browse/IMD-60352)
 
@@ -20,10 +20,10 @@ benchmark. This index links to the full breakdown.
 
 ## Executive summary
 
-Under identical 100 rps load with a 100k-edge fixture, **lineage-svc beat
+Under identical 100 rps load with a 100k-edge fixture, **data-lineage beat
 Marquez on every measured metric by 1–3 orders of magnitude**:
 
-| Metric | lineage-svc | Marquez | Speedup |
+| Metric | data-lineage | Marquez | Speedup |
 | --- | --- | --- | --- |
 | Loader throughput | 110 ev/s | 33 ev/s | **3.3×** |
 | Write p95 @ 100 rps | **8 ms** | 21,190 ms | **2,649×** |

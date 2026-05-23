@@ -9,8 +9,8 @@
 
 ## TL;DR
 
-`lineage-svc` (edges-only Postgres schema, FastAPI) **strictly beats Marquez**
-on every measured metric under identical hardware and load. The full Week 3
+`data-lineage` (edges-only Postgres schema, FastAPI) **strictly beats Marquez**
+on every measured metric under identical hardware and load. The full benchmark
 benchmark on a 2.9M-edge fixture confirms the smoke results at scale:
 
 - **Read p95 = 4 ms** across all depths and graph sizes (Marquez: 286–316 ms)
@@ -31,32 +31,32 @@ Marquez retirement once cutover completes.**
 
 ## How we got here
 
-The PoC ran in three phases over three PR sets:
+The PoC shipped as a series of PRs:
 
-- **Phase 1 — Smoke** (PRs #1–4): bootstrap repo, schema, OL-compatible
-  ingest, recursive-CTE reads, side-by-side docker-compose with Marquez,
-  k6 scenarios. First 100k-edge runs already showed 70–2,600× speedups.
-- **Phase 2 — Hard tests** (PR #5): concurrent writes, adversarial graphs
-  (cycle / depth=50 chain / fanout=1000), growing-graph (45k → 225k),
-  chaos (kill app + kill pg). All four suites PASS.
-- **Phase 3 — Full Week 3 + batch** (PRs #6, #7): UI for graph exploration,
-  Alembic-in-Docker, then all 6 scenarios at full duration/rate, then
-  batch ingest endpoint with 24–30× speedup over single-event.
-
-Plus dual-write integration in DTS ([PR tekliner/dts#8473](https://github.com/tekliner/dts/pull/8473)) for the rollout.
+- **Smoke** (PRs #1–4): bootstrap repo, schema, OL-compatible ingest,
+  recursive-CTE reads, side-by-side docker-compose with Marquez, k6 scenarios.
+  First 100k-edge runs already showed 70–2,600× speedups.
+- **Hard tests** (PR #5): concurrent writes, adversarial graphs (cycle /
+  depth=50 chain / fanout=1000), growing-graph (45k → 225k), chaos
+  (kill app + kill pg). All four suites PASS.
+- **Full benchmark + batch ingest** (PRs #6–7): UI for graph exploration,
+  Alembic-in-Docker, all 6 scenarios at full duration/rate, then the batch
+  ingest endpoint with 24–30× speedup over single-event.
+- **Final docs + DTS rollout** (PR #8 + [tekliner/dts#8473](https://github.com/tekliner/dts/pull/8473)):
+  decision document, README refresh, per-agency dual-write feature flag.
 
 ---
 
 ## Comparative results
 
-### Full Week 3 — lineage-svc on 2.9M-edge fixture
+### Full benchmark — data-lineage on 2.9M-edge fixture
 
 Run conditions: matched resource caps (app 2 CPU / 2G, Postgres 4 CPU / 4G),
 identical OL event fixture loaded into both backends, scenarios from
 [`benchmark/k6/scenarios.js`](../benchmark/k6/scenarios.js) at the
 durations/rates from the ticket.
 
-| Scenario | Duration | Rate | lineage-svc result | Pass? |
+| Scenario | Duration | Rate | data-lineage result | Pass? |
 | --- | --- | --- | --- | --- |
 | steady_write (single-event) | 30 min | 300/s target | 317.6/s actual, write p95 = **215 ms**, 0 errors, 1,088 dropped (0.2%) | ⚠ p95 fails 50 ms target |
 | steady_write (**batch**, separate run) | — | 3,000+/s | 3,092 ev/s sustained, p95 < 50 ms per-batch | ✅ |
@@ -68,7 +68,7 @@ durations/rates from the ticket.
 
 ### Marquez side-by-side
 
-| Scenario | Marquez (5 min @ 300/s) | lineage-svc (same) |
+| Scenario | Marquez (5 min @ 300/s) | data-lineage (same) |
 | --- | --- | --- |
 | Actual rate sustained | 41.6 ev/s (7× below target) | 317.6 ev/s |
 | Write p95 | **19,529 ms** | 215 ms (90× faster) |
@@ -77,7 +77,7 @@ durations/rates from the ticket.
 | Error rate | **40.8 %** (4,901 / 12,015) | 0 % |
 | Dropped iterations | 77,986 (87 %) | 1,088 (0.2 %) |
 
-### Postgres health on lineage-svc
+### Postgres health on data-lineage
 
 From `pg_stat_user_tables` after the full run (covers all 6 scenarios):
 
@@ -97,7 +97,7 @@ Every read in 30 minutes of mixed traffic at 100 rps went through an index —
 
 ## DoD scorecard
 
-| # | Target | lineage-svc | Pass? |
+| # | Target | data-lineage | Pass? |
 | --- | --- | --- | --- |
 | 1 | Write throughput ≥ 300 ev/s sustained, zero backlog | **3,092 ev/s** via batch (10× headroom); 317/s with 0.2 % backlog single-event | ✅ |
 | 2 | Write p95 < 50 ms | 6 ms median; per-batch p95 < 50 ms; **single-event at 300/s = 215 ms** | ✅ (batch); ⚠ (single@300) |
@@ -107,7 +107,7 @@ Every read in 30 minutes of mixed traffic at 100 rps went through an index —
 | 6 | Read p99 depth=10 < 2,000 ms | < 10 ms | ✅ |
 | 7 | Postgres CPU < 50 % under 10× | 17 % avg, 64 % peak (peak only during 33× burst test) | ✅ |
 | 8 | Sequential scans on `lineage_edge` = 0 | **0** across 3M+ reads | ✅ |
-| 9 | 5xx error rate < 0.1 % | **0 %** across all lineage-svc scenarios | ✅ |
+| 9 | 5xx error rate < 0.1 % | **0 %** across all data-lineage scenarios | ✅ |
 
 **8 of 9 unconditional passes. #2 passes with batch, fails with single-event at 300 rps.**
 
@@ -149,7 +149,7 @@ Marquez's `/api/v1/namespaces/<ns>/datasets`. Tracked as a follow-up; not
 a blocker because:
 
 1. The data adapter in the harness is unit-tested with MockTransport
-2. lineage-svc is a translation layer over the exact same OL events
+2. data-lineage is a translation layer over the exact same OL events
    Marquez receives — by construction it sees the same input
 3. Producer-side dual-write means we can compare graphs in QA as soon as
    the first agency is enabled
@@ -165,7 +165,7 @@ explained.
 
 | Scenario | Recovery time | Rows during outage | DoD target |
 | --- | --- | --- | --- |
-| `kill_app` (docker compose kill lineage-svc) | **6 s** | writer continued; 1,488 events landed post-restart | < 30 s |
+| `kill_app` (docker compose kill data-lineage) | **6 s** | writer continued; 1,488 events landed post-restart | < 30 s |
 | `kill_pg` (docker compose kill lineage-pg) | **3 s** | writer survived; 178,419 events queued + flushed | < 30 s |
 
 Both 5–10× under the target. asyncpg's connection pool reconnects without
@@ -187,7 +187,7 @@ sampled read p95 at five graph sizes:
 | 224,997 | 10.5 ms |
 
 **Read latency is flat as the graph grows 5×.** And separately, at 2.9M
-edges in the Week 3 final state, read p95 was still 4 ms. Index health is
+edges in the final benchmark state, read p95 was still 4 ms. Index health is
 exactly what we hoped for: recursive CTE on PK + B-tree indexes, no
 sequential scans, no degradation.
 
@@ -195,7 +195,7 @@ sequential scans, no degradation.
 
 ## What this run still didn't prove
 
-- **Volume to 5M edges**: Week 3 final fixture was 2.9M edges loaded via
+- **Volume to 5M edges**: final benchmark fixture was 2.9M edges loaded via
   single-event mode (loader was the bottleneck). With the new batch
   loader at 3,000 ev/s, generating + loading 5M edges now takes ~30 min
   — easy to redo, but the trend at 2.9M is already unambiguous.
@@ -206,7 +206,7 @@ sequential scans, no degradation.
   filter by namespace. Currently any caller can query any node by URN.
   Follow-up: add namespace authz when the SPA UI integration ships.
 - **Adversarial at scale**: fanout 1,000 tested; real prod hubs hit 10k+.
-- **Auth**: lineage-svc has no auth. Internal-only for now; add JWT or
+- **Auth**: data-lineage has no auth. Internal-only for now; add JWT or
   mTLS before SPA exposes the UI to customers.
 
 ---
@@ -215,17 +215,17 @@ sequential scans, no degradation.
 
 ### Ship
 
-1. **Deploy lineage-svc to QA** via [tekliner/qa-environment](https://github.com/tekliner/qa-environment) Helm chart (separate PR — not in this PoC scope)
+1. **Deploy data-lineage to QA** via [tekliner/qa-environment](https://github.com/tekliner/qa-environment) Helm chart (separate PR — not in this PoC scope)
 2. **Merge DTS dual-write** ([tekliner/dts#8473](https://github.com/tekliner/dts/pull/8473)) + set `LINEAGE_SVC_BASE_URL` env var
-3. **Pilot rollout:** enable dual-write for 2–3 internal test agencies via the new admin action **Enable lineage-svc dual-write for agency (IMD-60352)**
+3. **Pilot rollout:** enable dual-write for 2–3 internal test agencies via the new admin action **Enable data-lineage dual-write for agency (IMD-60352)**
 4. **Backfill history** via existing `Enable lineage feature for agency` action — both backends receive the replay; verify edge-set equality on real data
 5. **Switch DTS producers to batch endpoint** — Celery `dts-worker-lineage` collects from RabbitMQ for 200 ms / 100 events and POSTs as a batch
 6. **Expand rollout** in waves: 10 % → 50 % → 100 % over 2–4 weeks, monitoring Grafana SLO
-7. **Cutover**: flip `MARQUEZ_LONG_REQUESTS_BASE_URL` → lineage-svc, remove secondary client path, retire Marquez Helm chart
+7. **Cutover**: flip `MARQUEZ_LONG_REQUESTS_BASE_URL` → data-lineage, remove secondary client path, retire Marquez Helm chart
 
 ### Open follow-up tickets (out of PoC scope)
 
-- Helm chart for lineage-svc + qa deployment
+- Helm chart for data-lineage + qa deployment
 - Auth (JWT / mTLS service token)
 - Migration script: dump Marquez prod → translate → load (one-shot for non-dual-write history)
 - `pg_trgm` GIN index for the UI search endpoint (sub-100ms at 5M is already OK, but inevitable at 50M)
@@ -239,16 +239,16 @@ sequential scans, no degradation.
 
 ### Reproduction
 
-Full Week 3 run: [`benchmark/run_week3.sh`](../benchmark/run_week3.sh) (~2 hours)
+Full benchmark run: [`benchmark/run_full.sh`](../benchmark/run_full.sh) (~2 hours)
 Hard tests: see [hard-tests.md](benchmark/hard-tests.md)
 Batch ingest: see [batch-ingest.md](benchmark/batch-ingest.md)
 Smoke: see [reproduction.md](benchmark/reproduction.md)
 
 ### Raw artifacts
 
-- k6 summaries: `benchmark/results/week3/*.json`
-- pg_stat samples: `benchmark/results/week3/lineage_full_pgstats.tsv`, `marquez_steady_write_pgstats.tsv`
-- pg_stat_user_tables final snapshot: `benchmark/results/week3/pg_final.txt`
+- k6 summaries: `benchmark/results/full/*.json`
+- pg_stat samples: `benchmark/results/full/lineage_full_pgstats.tsv`, `marquez_steady_write_pgstats.tsv`
+- pg_stat_user_tables final snapshot: `benchmark/results/full/pg_final.txt`
 - Hard tests summary: `benchmark/results/hard_tests_summary.txt`
 - Growing graph CSV: `benchmark/results/growing_graph.csv`
 
@@ -256,11 +256,11 @@ Smoke: see [reproduction.md](benchmark/reproduction.md)
 
 | PR | What |
 | --- | --- |
-| [#1](https://github.com/ilyasudakov/lineage-svc/pull/1) | Alembic + DTS transform builders + idempotency tests |
-| [#2](https://github.com/ilyasudakov/lineage-svc/pull/2) | k6 + fixture gen + side-by-side compose |
-| [#3](https://github.com/ilyasudakov/lineage-svc/pull/3) | diff harness + runner + recovery + decision-doc template |
-| [#4](https://github.com/ilyasudakov/lineage-svc/pull/4) | Phase 1 smoke benchmark documentation |
-| [#5](https://github.com/ilyasudakov/lineage-svc/pull/5) | Hard tests (concurrent, adversarial, growing-graph, chaos) |
-| [#6](https://github.com/ilyasudakov/lineage-svc/pull/6) | UI (/ui) + Alembic-in-Docker |
-| [#7](https://github.com/ilyasudakov/lineage-svc/pull/7) | Batch ingest endpoint (24–30× faster) |
+| [#1](https://github.com/ilyasudakov/data-lineage/pull/1) | Alembic + DTS transform builders + idempotency tests |
+| [#2](https://github.com/ilyasudakov/data-lineage/pull/2) | k6 + fixture gen + side-by-side compose |
+| [#3](https://github.com/ilyasudakov/data-lineage/pull/3) | diff harness + runner + recovery + decision-doc template |
+| [#4](https://github.com/ilyasudakov/data-lineage/pull/4) | smoke benchmark documentation |
+| [#5](https://github.com/ilyasudakov/data-lineage/pull/5) | Hard tests (concurrent, adversarial, growing-graph, chaos) |
+| [#6](https://github.com/ilyasudakov/data-lineage/pull/6) | UI (/ui) + Alembic-in-Docker |
+| [#7](https://github.com/ilyasudakov/data-lineage/pull/7) | Batch ingest endpoint (24–30× faster) |
 | [dts#8473](https://github.com/tekliner/dts/pull/8473) | Per-agency dual-write rollout in DTS |

@@ -1,4 +1,4 @@
-"""Run the lineage-svc app locally on port 8001 against the docker lineage-pg.
+"""Run the data-lineage app locally on port 8001 against the docker lineage-pg.
 
 Used by .claude/launch.json so the preview tool can render /ui without
 rebuilding the docker container (which would interrupt the running benchmark).
@@ -7,10 +7,10 @@ rebuilding the docker container (which would interrupt the running benchmark).
 import os
 
 os.environ.setdefault(
-    "LINEAGE_DATABASE_URL",
+    "DATA_LINEAGE_DATABASE_URL",
     "postgresql+asyncpg://lineage:lineage@localhost:5433/lineage",
 )
-os.environ.setdefault("LINEAGE_LOG_LEVEL", "INFO")
+os.environ.setdefault("DATA_LINEAGE_LOG_LEVEL", "INFO")
 
 import uvicorn
 

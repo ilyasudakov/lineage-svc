@@ -1,4 +1,4 @@
-# Benchmark Results — Phase 1 Smoke
+# Benchmark Results — smoke Smoke
 
 **Date:** 2026-05-23
 **Fixture:** 100k edges (33,333 OL events), power-law, 20 namespaces
@@ -16,12 +16,12 @@ concurrency=8, posting the same 33,333-event NDJSON file to each backend.
 
 | Backend | Events/sec | Total time | Errors |
 | --- | --- | --- | --- |
-| **lineage-svc** | **110** | 5 min 02 s | 0 |
+| **data-lineage** | **110** | 5 min 02 s | 0 |
 | **Marquez** | **33** | 16 min 28 s | 0 |
 | **Speedup** | **3.3×** | | |
 
 Notes:
-- Loader was first run at concurrency=32, which crashed lineage-svc's
+- Loader was first run at concurrency=32, which crashed data-lineage's
   connections — backed off to 8 for both backends to keep the comparison
   fair. The loader, not the server, is the bottleneck at concurrency=8
   (HTTP-per-request Python overhead + GIL).
@@ -34,7 +34,7 @@ Notes:
 
 Constant-arrival-rate executor, write-only payload.
 
-| Metric | lineage-svc | Marquez | Δ |
+| Metric | data-lineage | Marquez | Δ |
 | --- | --- | --- | --- |
 | Write p95 | **8 ms** | 21,190 ms | **2,649× slower** |
 | Write median | 5 ms | 12,380 ms | 2,476× |
@@ -45,7 +45,7 @@ Constant-arrival-rate executor, write-only payload.
 | Dropped iterations | 0 | 3,728 | — |
 | Errors | 0 (0.0 %) | 666 (29.3 %) | — |
 
-**lineage-svc target: write p95 < 50 ms** → 8 ms = **PASS** (6× headroom)
+**data-lineage target: write p95 < 50 ms** → 8 ms = **PASS** (6× headroom)
 **Marquez:** misses the same target by **424×**.
 
 Marquez at 100 rps is so far below its own write throughput ceiling that
@@ -62,7 +62,7 @@ messages (per the ticket's grafana sample).
 Mixed read workload: 70% `/direct`, 20% depth=3, 10% depth=10. No write
 load running in parallel (that's `steady_read` in the full plan).
 
-| Metric | lineage-svc | Marquez | Δ |
+| Metric | data-lineage | Marquez | Δ |
 | --- | --- | --- | --- |
 | Read `direct` p95 | **4 ms** | 285.8 ms | **71×** |
 | Read depth=3 p95 | **4 ms** | 287 ms | **72×** |
@@ -72,7 +72,7 @@ load running in parallel (that's `steady_read` in the full plan).
 | HTTP requests | 6,001 | 6,000 | — |
 | Sustained rate | 100 / s | 100 / s | — |
 
-**lineage-svc targets:**
+**data-lineage targets:**
 - `direct` p95 < 50 ms → 4 ms = **PASS** (12× headroom)
 - depth=3 p95 < 100 ms → 4 ms = **PASS** (25× headroom)
 - depth=10 p95 < 500 ms → 4 ms = **PASS** (125× headroom)
@@ -81,7 +81,7 @@ load running in parallel (that's `steady_read` in the full plan).
 Marquez fails all four read targets at 100 rps — 286 ms for a single-hop
 neighbor lookup is 5.7× worse than the 50 ms target.
 
-The lineage-svc latency is flat across depths because most random URNs
+The data-lineage latency is flat across depths because most random URNs
 miss existing nodes (returning empty edge sets, which is a B-tree
 look-up — index hit, no recursion to do). The depth=10 latency stays
 flat for the hit cases too, because the recursive CTE walks indexed PK
@@ -92,7 +92,7 @@ that's where its latency comes from.
 
 ## Score vs Definition of Done
 
-| # | Target | lineage-svc result | Status |
+| # | Target | data-lineage result | Status |
 | --- | --- | --- | --- |
 | 1 | Write throughput ≥ 300 ev/s sustained, zero backlog | not tested at 300/s yet | **pending full run** |
 | 2 | Write p95 < 50 ms | 8 ms | ✅ |

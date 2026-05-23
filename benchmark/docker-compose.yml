@@ -1,4 +1,4 @@
-# Side-by-side benchmark stack: lineage-svc + Marquez, each with their own
+# Side-by-side benchmark stack: data-lineage + Marquez, each with their own
 # Postgres, both scraped by a single Prometheus, visualized in Grafana.
 #
 # Resource limits match across both services so the comparison is fair.
@@ -11,7 +11,7 @@ x-pg-limits: &pg-limits
         memory: 4G
 
 services:
-  # ---------- lineage-svc stack ----------
+  # ---------- data-lineage stack ----------
   lineage-pg:
     image: postgres:16-alpine
     environment:
@@ -27,12 +27,12 @@ services:
       retries: 10
     <<: *pg-limits
 
-  lineage-svc:
+  data-lineage:
     build:
       context: ..
       dockerfile: Dockerfile
     environment:
-      LINEAGE_DATABASE_URL: postgresql+asyncpg://lineage:lineage@lineage-pg:5432/lineage
+      DATA_LINEAGE_DATABASE_URL: postgresql+asyncpg://lineage:lineage@lineage-pg:5432/lineage
     depends_on:
       lineage-pg:
         condition: service_healthy

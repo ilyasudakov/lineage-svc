@@ -1,4 +1,4 @@
-"""Edge-set equality diff between lineage-svc and Marquez.
+"""Edge-set equality diff between data-lineage and Marquez.
 
 Picks N nodes randomly from a sample file (one URN per line) and for each one
 queries the `direct` endpoint on both backends, then compares the upstream and

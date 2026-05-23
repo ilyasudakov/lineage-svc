@@ -16,7 +16,7 @@ from app.schemas import BatchIngestRequest, BatchIngestResponse, Direction, Open
 from app.translator import translate
 
 logging.basicConfig(level=settings.log_level)
-log = logging.getLogger("lineage-svc")
+log = logging.getLogger("data-lineage")
 
 
 @asynccontextmanager
@@ -25,7 +25,7 @@ async def lifespan(_: FastAPI):
     await engine.dispose()
 
 
-app = FastAPI(title="lineage-svc", version="0.1.0", lifespan=lifespan)
+app = FastAPI(title="data-lineage", version="0.1.0", lifespan=lifespan)
 app.include_router(ui_router)
 
 _STATIC_DIR = Path(__file__).parent / "static"

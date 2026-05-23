@@ -1,7 +1,7 @@
 # Issues Found During the Smoke Benchmark
 
 Four bugs surfaced between bringing the stack up and getting the first
-green run. Documenting them here so the full Week 3 run starts clean and
+green run. Documenting them here so the full benchmark run starts clean and
 so that anyone replaying this knows what to expect.
 
 ---
@@ -34,7 +34,7 @@ stmt = insert(LineageEdge.__table__).values(rows)
 ```
 
 **Where:** [`app/repository.py:26-28`](../../app/repository.py),
-landed in master via [PR #3](https://github.com/ilyasudakov/lineage-svc/pull/3)
+landed in master via [PR #3](https://github.com/ilyasudakov/data-lineage/pull/3)
 commit `943b886`.
 
 ---
@@ -53,7 +53,7 @@ can't run inside the container.
 port:
 
 ```bash
-LINEAGE_DATABASE_URL="postgresql+asyncpg://lineage:lineage@localhost:5433/lineage" \
+DATA_LINEAGE_DATABASE_URL="postgresql+asyncpg://lineage:lineage@localhost:5433/lineage" \
   alembic upgrade head
 ```
 
@@ -103,12 +103,12 @@ before naming overrides.
 ## 4. URN shape mismatch + URN pool too large
 
 **Symptom:** Read scenarios against Marquez reported 100% errors (6,001 /
-6,001 HTTP 4xx). Against lineage-svc, reads succeeded but returned empty
+6,001 HTTP 4xx). Against data-lineage, reads succeeded but returned empty
 edge sets ~98% of the time.
 
 **Cause(s):** Two separate issues compounded.
 
-- **Separator:** lineage-svc URNs are formatted `dataset:<ns>/<name>`.
+- **Separator:** data-lineage URNs are formatted `dataset:<ns>/<name>`.
   Marquez expects `dataset:<ns>:<name>` (colon, not slash). The k6
   generator hardcoded the slash.
 - **Pool size:** The k6 generator picked dataset IDs from a 500,000-wide
@@ -129,7 +129,7 @@ return `dataset:${ns}${sep}${name}`;
 ```
 
 The same `BACKEND` flag also switches the read URL shape — Marquez's
-`/api/v1/lineage?nodeId=…&depth=1` vs lineage-svc's
+`/api/v1/lineage?nodeId=…&depth=1` vs data-lineage's
 `/api/v1/lineage/direct?node=…`.
 
 **Where:** [`benchmark/k6/lib/urn.js`](../../benchmark/k6/lib/urn.js),
@@ -154,7 +154,7 @@ absolute path before Docker even sees it.
 
 ```bash
 MSYS_NO_PATHCONV=1 docker run --rm -i --network benchmark_default \
-  -v "E:/projects/lineage-svc/benchmark:/bench" \
+  -v "E:/projects/data-lineage/benchmark:/bench" \
   grafana/k6 run /bench/k6/scenarios.js
 ```
 

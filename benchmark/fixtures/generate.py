@@ -2,7 +2,7 @@
 
 Generates a power-law graph (a few hub datasets, long tail of leaves) at the
 edge count specified, writes NDJSON of OL RunEvents to disk, and optionally
-posts them against either lineage-svc or Marquez (same /api/v1/lineage shape).
+posts them against either data-lineage or Marquez (same /api/v1/lineage shape).
 
 Usage:
     # Generate fixture

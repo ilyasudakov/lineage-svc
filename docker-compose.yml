@@ -15,11 +15,11 @@ services:
       timeout: 3s
       retries: 10
 
-  lineage-svc:
+  data-lineage:
     build: .
     environment:
-      LINEAGE_DATABASE_URL: postgresql+asyncpg://lineage:lineage@postgres:5432/lineage
-      LINEAGE_LOG_LEVEL: INFO
+      DATA_LINEAGE_DATABASE_URL: postgresql+asyncpg://lineage:lineage@postgres:5432/lineage
+      DATA_LINEAGE_LOG_LEVEL: INFO
     depends_on:
       postgres:
         condition: service_healthy

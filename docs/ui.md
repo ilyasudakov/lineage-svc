@@ -1,6 +1,6 @@
 # Lineage UI
 
-A small single-page graph explorer for the edges stored in `lineage-svc`.
+A small single-page graph explorer for the edges stored in `data-lineage`.
 Lives at **`/ui`**, served by FastAPI itself — no separate frontend service.
 
 ## Stack

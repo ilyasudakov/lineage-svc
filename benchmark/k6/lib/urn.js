@@ -21,7 +21,7 @@ export function pickNamespace() {
 }
 
 // Both backends store the same dataset names (loaded from one fixture);
-// only the URN separator differs: lineage-svc uses '/', Marquez uses ':'.
+// only the URN separator differs: data-lineage uses '/', Marquez uses ':'.
 export function randomDatasetUrn() {
   const ns = pickNamespace();
   const src = SOURCES[powerLaw(SOURCES.length)];
